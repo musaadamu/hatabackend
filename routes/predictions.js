@@ -19,7 +19,7 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5000';
  * @access  Public (optionally authenticated)
  */
 router.post('/predict', optionalAuth, [
-  body('text').trim().isLength({ min: 1, max: 10000 }),
+  body('text').trim().isLength({ min: 1, max: 50000 }),  // Allow up to 50,000 characters (~10,000 words)
   body('language').isIn(['ha', 'yo', 'ig', 'pcm'])
 ], async (req, res) => {
   try {
@@ -39,14 +39,15 @@ router.post('/predict', optionalAuth, [
     logger.info(`Calling ML service at: ${ML_SERVICE_URL}/predict`);
 
     // Call Python ML service
-    // Note: Explainability and bias enabled (may take 1-2 minutes on CPU)
+    // Note: Explainability and bias enabled (may take several minutes on CPU)
+    const timeoutValue = parseInt(process.env.ML_SERVICE_TIMEOUT) || 0;
     const mlResponse = await axios.post(`${ML_SERVICE_URL}/predict`, {
       text,
       language,
       include_explanation: true,   // Enabled for PhD thesis novelty
       include_bias: true            // Enabled for PhD thesis novelty
     }, {
-      timeout: parseInt(process.env.ML_SERVICE_TIMEOUT) || 300000  // 5 minutes default
+      timeout: timeoutValue  // 0 = no timeout, allow unlimited processing time
     });
 
     const processingTime = Date.now() - startTime;
