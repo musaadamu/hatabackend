@@ -11,7 +11,9 @@ const Prediction = require('../models/Prediction');
 const { optionalAuth, protect } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5000';
+const ML_SERVICE_URL_LIST = (process.env.ML_SERVICE_URL || 'http://localhost:5000').split(',');
+// For now, pick the first one, or in production (on Render), the var will usually be set to a single value anyway
+const ML_SERVICE_URL = ML_SERVICE_URL_LIST[0];
 
 /**
  * @route   POST /api/predictions/predict
