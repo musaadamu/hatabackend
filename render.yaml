@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: hatabackend
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: ML_SERVICE_URL
+        value: https://hatamlservice.onrender.com
+      - key: MONGODB_URI
+        fromDatabase:
+          name: hatadb
+          property: connectionString
