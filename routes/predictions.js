@@ -41,7 +41,7 @@ router.post('/predict', optionalAuth, [
 
     // Call Hugging Face Direct API
     const hfResponse = await axios.post(
-      "https://api-inference.huggingface.co/models/msmaje/phdhatamodel-afro-xml-updated",
+      "https://api-inference.huggingface.co/models/msmaje/phdhatamodel",
       { inputs: text },
       {
         headers: {
