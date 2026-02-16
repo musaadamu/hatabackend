@@ -41,9 +41,9 @@ router.post('/predict', optionalAuth, [
     logger.info(`HuggingFaceToken set: ${!!process.env.HuggingFaceToken}`);
     logger.info(`Text length: ${text.length}`);
 
-    // Call Hugging Face Direct API
+    // Call Hugging Face Direct API (using new router endpoint)
     const hfResponse = await axios.post(
-      "https://api-inference.huggingface.co/models/msmaje/phdhatamodel",
+      "https://router.huggingface.co/models/msmaje/phdhatamodel",
       { inputs: text },
       {
         headers: {
