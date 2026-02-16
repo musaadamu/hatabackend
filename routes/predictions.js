@@ -112,8 +112,6 @@ router.post('/predict', optionalAuth, [
         processing_time: processingTime / 1000
       }
     });
-      }
-    });
 
   } catch (error) {
     logger.error(`Prediction error: ${error.message}`);
