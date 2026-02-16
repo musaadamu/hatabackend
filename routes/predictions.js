@@ -37,50 +37,39 @@ router.post('/predict', optionalAuth, [
     const { text, language } = req.body;
     const startTime = Date.now();
 
-    logger.info(`Calling Hugging Face Inference API for: ${language}`);
-    logger.info(`HuggingFaceToken set: ${!!process.env.HuggingFaceToken}`);
+    logger.info(`Calling ML Service for: ${language}`);
+    logger.info(`ML Service URL: ${ML_SERVICE_URL}`);
     logger.info(`Text length: ${text.length}`);
 
-    // Call Hugging Face Direct API (using new router endpoint)
-    const hfResponse = await axios.post(
-      "https://router.huggingface.co/models/msmaje/phdhatamodel",
-      { inputs: text },
+    // Call ML Service instead of HF API directly
+    const mlResponse = await axios.post(
+      `${ML_SERVICE_URL}/predict`,
+      { text, language },
       {
-        headers: {
-          Authorization: `Bearer ${process.env.HuggingFaceToken}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 30000 // 30s timeout for API
+        timeout: 30000 // 30s timeout
       }
     );
 
-    // HF returns something like [[{"label": "LABEL_0", "score": 0.99}, {"label": "LABEL_1", "score": 0.01}]]
-    const results = hfResponse.data[0];
-    const topResult = results.sort((a, b) => b.score - a.score)[0];
-
-    // Map LABEL_0/1 to our Human/AI labels
-    // Assuming LABEL_0 = Human, LABEL_1 = AI based on previous config
-    const predictedClass = topResult.label === 'LABEL_1' ? 1 : 0;
-    const confidence = topResult.score;
+    // ML Service returns: { prediction, explanation, biasScore, language_name, processing_time }
+    const mlResult = mlResponse.data;
+    const confidence = mlResult.prediction?.confidence || 0;
+    const predictedClass = mlResult.prediction?.label || 0;
 
     const processingTime = Date.now() - startTime;
 
-    // Generate fallback Explanation (Simple word-based scoring)
-    // This keeps the UI working without the heavy Python LIME service
-    const tokens = text.split(/\s+/).slice(0, 50);
-    const explanation = {
-      tokens: tokens,
-      importances: tokens.map(() => Math.random() * 0.5 + 0.2), // Mock scores for UI visualization
-      method: "simple-attribution",
-      status: "inference-api-mode"
+    // Use ML service results for explanation and bias score
+    const explanation = mlResult.explanation || {
+      tokens: text.split(/\s+/).slice(0, 50),
+      importances: [],
+      method: "ml-service",
+      status: "success"
     };
 
-    // Generate fallback Bias Score
-    const biasScore = {
-      gender: Math.random() * 0.1,
-      ethnic: Math.random() * 0.1,
-      religious: Math.random() * 0.1,
-      overall: 0.05
+    const biasScore = mlResult.biasScore || {
+      gender: 0,
+      ethnic: 0,
+      religious: 0,
+      overall: 0
     };
 
     // Save prediction to MongoDB
@@ -91,7 +80,7 @@ router.post('/predict', optionalAuth, [
         label: predictedClass,
         label_text: predictedClass === 1 ? "AI-generated" : "Human-written",
         confidence: confidence,
-        probabilities: [
+        probabilities: mlResult.prediction?.probabilities || [
           predictedClass === 0 ? confidence : 1 - confidence,
           predictedClass === 1 ? confidence : 1 - confidence
         ]
@@ -103,13 +92,13 @@ router.post('/predict', optionalAuth, [
         ipAddress: req.ip,
         userAgent: req.get('user-agent'),
         processingTime,
-        source: "huggingface-inference-api"
+        source: "ml-service"
       }
     });
 
     await prediction.save();
 
-    logger.info(`Prediction saved (HF API): ${prediction._id}`);
+    logger.info(`Prediction saved (ML Service): ${prediction._id}`);
 
     res.json({
       success: true,
@@ -119,8 +108,10 @@ router.post('/predict', optionalAuth, [
         explanation: prediction.explanation,
         biasScore: prediction.biasScore,
         language: language,
-        language_name: language === 'ha' ? 'Hausa' : language === 'yo' ? 'Yoruba' : language === 'ig' ? 'Igbo' : 'Pidgin',
+        language_name: mlResult.language_name || (language === 'ha' ? 'Hausa' : language === 'yo' ? 'Yoruba' : language === 'ig' ? 'Igbo' : 'Pidgin'),
         processing_time: processingTime / 1000
+      }
+    });
       }
     });
 
