@@ -31,6 +31,9 @@ if (process.env.ENABLE_REDIS === 'true') {
   logger.info('Redis disabled - running without cache (set ENABLE_REDIS=true to enable)');
 }
 
+// Trust proxy - important for Render and other reverse proxies
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 

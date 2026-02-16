@@ -38,6 +38,8 @@ router.post('/predict', optionalAuth, [
     const startTime = Date.now();
 
     logger.info(`Calling Hugging Face Inference API for: ${language}`);
+    logger.info(`HuggingFaceToken set: ${!!process.env.HuggingFaceToken}`);
+    logger.info(`Text length: ${text.length}`);
 
     // Call Hugging Face Direct API
     const hfResponse = await axios.post(
@@ -125,6 +127,8 @@ router.post('/predict', optionalAuth, [
   } catch (error) {
     logger.error(`Prediction error: ${error.message}`);
     logger.error(`Error code: ${error.code}`);
+    logger.error(`Error status: ${error.response?.status}`);
+    logger.error(`Error data: ${JSON.stringify(error.response?.data)}`);
     logger.error(`ML Service URL: ${ML_SERVICE_URL}`);
 
     if (error.code === 'ECONNREFUSED') {
