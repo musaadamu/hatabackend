@@ -11,9 +11,12 @@ const Prediction = require('../models/Prediction');
 const { optionalAuth, protect } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
-const ML_SERVICE_URL_LIST = (process.env.ML_SERVICE_URL || 'http://localhost:5000').split(',');
-// For now, pick the first one, or in production (on Render), the var will usually be set to a single value anyway
-const ML_SERVICE_URL = ML_SERVICE_URL_LIST[0];
+const ML_SERVICE_URL_LIST = (process.env.ML_SERVICE_URL || 'http://localhost:5000').split(',').map(url => url.trim());
+
+// Smart URL selection: Use production URL if in production, otherwise use localhost
+const ML_SERVICE_URL = process.env.NODE_ENV === 'production'
+  ? ML_SERVICE_URL_LIST.find(url => url.includes('render.com')) || ML_SERVICE_URL_LIST[ML_SERVICE_URL_LIST.length - 1]
+  : ML_SERVICE_URL_LIST[0];
 
 /**
  * @route   POST /api/predictions/predict
