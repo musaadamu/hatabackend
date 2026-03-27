@@ -13,9 +13,11 @@ const logger = require('../utils/logger');
 
 const ML_SERVICE_URL_LIST = (process.env.ML_SERVICE_URL || 'http://localhost:5000').split(',').map(url => url.trim());
 
-// Smart URL selection: Use production URL if in production, otherwise use localhost
+// Smart URL selection: Prefer Lambda URL in production, fallback to Render, then localhost
 const ML_SERVICE_URL = process.env.NODE_ENV === 'production'
-  ? ML_SERVICE_URL_LIST.find(url => url.includes('render.com')) || ML_SERVICE_URL_LIST[ML_SERVICE_URL_LIST.length - 1]
+  ? ML_SERVICE_URL_LIST.find(url => url.includes('lambda-url.') || url.includes('amazonaws.com'))
+    || ML_SERVICE_URL_LIST.find(url => url.includes('render.com'))
+    || ML_SERVICE_URL_LIST[ML_SERVICE_URL_LIST.length - 1]
   : ML_SERVICE_URL_LIST[0];
 
 /**
@@ -49,7 +51,7 @@ router.post('/predict', optionalAuth, [
       `${ML_SERVICE_URL}/predict`,
       { text, language },
       {
-        timeout: 30000 // 30s timeout
+        timeout: 60000 // 60s timeout — allows for Lambda cold starts
       }
     );
 
