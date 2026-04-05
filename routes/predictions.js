@@ -11,14 +11,7 @@ const Prediction = require('../models/Prediction');
 const { optionalAuth, protect } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
-const ML_SERVICE_URL_LIST = (process.env.ML_SERVICE_URL || 'http://localhost:5000').split(',').map(url => url.trim());
-
-// Smart URL selection: Prefer Lambda URL in production, fallback to Render, then localhost
-const ML_SERVICE_URL = process.env.NODE_ENV === 'production'
-  ? ML_SERVICE_URL_LIST.find(url => url.includes('lambda-url.') || url.includes('amazonaws.com'))
-    || ML_SERVICE_URL_LIST.find(url => url.includes('render.com'))
-    || ML_SERVICE_URL_LIST[ML_SERVICE_URL_LIST.length - 1]
-  : ML_SERVICE_URL_LIST[0];
+const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || 'http://localhost:5000').trim();
 
 /**
  * @route   POST /api/predictions/predict
